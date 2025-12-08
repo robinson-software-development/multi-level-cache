@@ -1,0 +1,239 @@
+{% extends '@WebProfiler/Profiler/layout.html.twig' %}
+
+
+{% block stylesheets %}
+	{{ parent() }}
+	<style>
+		tr.log-status-warning > td:first-child,
+		tr.log-status-error > td:first-child,
+		tr.log-status-silenced > td:first-child {
+			position: relative;
+		}
+		tr.log-status-warning > td:first-child:before,
+		tr.log-status-error > td:first-child:before,
+		tr.log-status-silenced > td:first-child:before {
+			background: transparent;
+			border-radius: 0;
+			content: '';
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 4px;
+			height: 100%;
+		}
+		tr.log-status-warning > td:first-child:before {
+			background: var(--yellow-400);
+		}
+		tr.log-status-error > td:first-child:before {
+			background: var(--red-400);
+		}
+		tr.log-status-silenced > td:first-child:before {
+			background: #a78bfa;
+		}
+	</style>
+{% endblock %}
+
+{% block menu %}
+	<span class="label {{collector.active ? '' : 'disabled'}}">
+		<span class="icon">
+			{{ source('@WebProfiler/Icon/cache.svg') }}
+		</span>
+		<strong>Multi Level Cache</strong>
+	</span>
+{% endblock %}
+
+{% block panel %}
+
+{% if collector.hasIssues() %}
+	<h2>Issues</h2>
+	<table>
+		<thead>
+			<tr>
+				<th>Issue</th>
+				<th>Description</th>
+			</tr>
+		</thead>
+		<tbody>
+			{% for issueKey, issue in collector.getIssues() %}
+				<tr class="{{ issue.statusClass }}">
+					<td>
+						<span class="log-type-badge badge {{ issue.badgeClass }}">
+							{{ issue.type }}
+						</span>
+					</td>
+					<td>{{ issue.description }}</td>
+				</tr>
+			{% endfor %}
+		</tbody>
+	</table>
+{% endif %}
+
+<h2>Metrics</h2>
+
+<div class="metrics">
+	{% for summaryGroupName, summaryGroupValue in collector.summary %}
+		<div class="metric-group">
+			{% for statName, stat in summaryGroupValue %}
+				<div class="metric">
+					<span class="value">
+						{{ stat.value|number_format(stat.decimals) }}
+						<span class="unit">{{ stat.unit }}</span>
+					</span>
+					<span class="label">{{ statName }}</span>
+				</div>
+			{% endfor %}
+		</div>
+		<div class="metric-divider"></div>
+	{% endfor %}
+</div>
+
+<h3>Per Adapter Summary</h3>
+<table>
+	<thead>
+		<tr>
+			<th>Adapter</th>
+			<th>Writes</th>
+			<th>Hits</th>
+			<th>Misses</th>
+			<th>Beta</th>
+			<th>Hit&nbsp;rate</th>
+			<th>Deletes</th>
+			<th>Time&nbsp;Write</th>
+			<th>Time&nbsp;Read</th>
+			<th>Time&nbsp;Delete</th>
+			<th>Time&nbsp;Total</th>
+		</tr>
+	</thead>
+	<tbody>
+		{% for adapter in collector.adapters %}
+			<tr>
+				<td>{{ adapter }}</td>
+				<td>{{ collector.getSummary(adapter).io["writes"].value }}</td>
+				<td>{{ collector.getSummary(adapter).io["read hits"].value }}</td>
+				<td>{{ collector.getSummary(adapter).io["read misses"].value }}</td>
+				<td>{{ collector.getSummary(adapter).io["beta misses"].value }}</td>
+				<td>{{ collector.getSummary(adapter).io["hit rate"].value|number_format(1) }}%</td>
+				<td>{{ collector.getSummary(adapter).io["deletes"].value }}</td>
+				<td>{{ collector.getSummary(adapter).timings["time write"].value|number_format(3) }}&nbsp;s</td>
+				<td>{{ collector.getSummary(adapter).timings["time read"].value|number_format(3) }}&nbsp;s</td>
+				<td>{{ collector.getSummary(adapter).timings["time delete"].value|number_format(3) }}&nbsp;s</td>
+				<td>{{ collector.getSummary(adapter).timings["time total"].value|number_format(3) }}&nbsp;s</td>
+			</tr>
+		{% endfor %}
+	</tbody>
+</table>
+
+<h2>Cache Groups</h2>
+
+{% if collector.groupedInstances is empty %}
+	<div class="empty">
+		<p>No configured caches were found.</p>
+	</div>
+{% endif %}
+{% for groupName, groupEntries in collector.groupedInstances %}
+	<h3>Cache Group:
+		{{ groupName }}</h3>
+
+	<table style="display: table;">
+		<thead>
+			<tr>
+				<th>Level</th>
+				<th>Name</th>
+				<th>Hits&nbsp;/&nbsp;Misses</th>
+				<th>Hit&nbsp;rate</th>
+				<th>Reads</th>
+				<th>Writes</th>
+				<th>Deletes</th>
+				<th>Runtime&nbsp;(s)</th>
+			</tr>
+		</thead>
+		<tbody>
+			{% for entry in groupEntries %}
+				<tr class="" style="display: table-row;">
+					<td class="font-normal">
+						L{{ entry.level }}
+					</td>
+					<td class="font-normal" title="{{ entry.class }}">
+						{{ entry.name }}<br>
+						<div style="margin-top: 4px;">
+							{% if entry.statistics.configData is not empty %}
+								<a class="sf-toggle" data-toggle-selector="#config-{{ entry.nameForId }}-G{{ entry.groupNameForId }}-L{{ entry.level }}-config" data-toggle-initial="false" href="#">
+									<span class="label">Config</span>
+								</a>
+							{% endif %}
+							{% if entry.statistics.enhancedUsageData is not empty %}
+								<a class="sf-toggle" data-toggle-selector="#config-{{ entry.nameForId }}-G{{ entry.groupNameForId }}-L{{ entry.level }}-statistics" data-toggle-initial="false" href="#">
+									<span class="label">More Statistics</span>
+								</a>
+							{% endif %}
+							{% if entry.statistics.cachedKeys is not null %}
+								<a class="sf-toggle" data-toggle-selector="#config-{{ entry.nameForId }}-G{{ entry.groupNameForId }}-L{{ entry.level }}-cached-keys" data-toggle-initial="false" href="#">
+									<span class="label">Cached Keys ({{ entry.statistics.cachedKeys|length }})</span>
+								</a>
+							{% endif %}
+						</div>
+					</td>
+					<td class="font-normal">
+						{{ entry.statistics.hits }}&nbsp;hits<br>
+						{{ entry.statistics.misses }}&nbsp;misses<br>
+						{{ entry.statistics.betaDecays }}&nbsp;beta
+					</td>
+					<td class="font-normal">
+						{{ entry.statistics.hitRatePercent|number_format(1) }}%
+					</td>
+					<td class="font-normal">
+						{{ entry.statistics.reads }}&nbsp;reads<br>
+						{{ entry.statistics.runtimeSecondsRead|number_format(3) }}&nbsp;s
+					</td>
+					<td class="font-normal">
+						{{ entry.statistics.writes }}&nbsp;writes<br>{{ entry.statistics.runtimeSecondsWrite|number_format(3) }}&nbsp;s
+					</td>
+					<td class="font-normal">
+						{{ entry.statistics.deletes }}&nbsp;deletes<br>{{ entry.statistics.runtimeSecondsDelete|number_format(3) }}&nbsp;s
+					</td>
+					<td class="font-normal">
+						{{ entry.statistics.runtimeSecondsTotal|number_format(3) }}&nbsp;s
+					</td>
+				</tr>
+				<tr>
+					<td colspan="9">
+						{% if entry.statistics.configData is not empty %}
+							<div id="config-{{ entry.nameForId }}-G{{ entry.groupNameForId }}-L{{ entry.level }}-config" class="sf-toggle-content">
+								<pre>{{ dump(entry.statistics.configData) }}</pre>
+							</div>
+						{% endif %}
+						{% if entry.statistics.enhancedUsageData is not empty %}
+							<div id="config-{{ entry.nameForId }}-G{{ entry.groupNameForId }}-L{{ entry.level }}-statistics" class="sf-toggle-content">
+								<table>
+									<thead>
+										<tr>
+											<th>Key</th>
+											<th>Hits</th>
+											<th>Misses</th>
+											<th>Rate</th>
+										</tr>
+									</thead>
+									<tbody>
+										{% for dataKey, dataEntry in entry.statistics.enhancedUsageData %}
+											<tr>
+												<td>{{ dataKey }}</td>
+												<td>{{ dataEntry.hits }}</td>
+												<td>{{ dataEntry.misses }}</td>
+												<td>{{ (dataEntry.hits / (dataEntry.hits + dataEntry.misses) * 100)|number_format(1) }}%</td>
+											</tr>
+										{% endfor %}
+									</tbody>
+								</table>
+							</div>
+						{% endif %}
+						{% if entry.statistics.cachedKeys is not null %}
+							<div id="config-{{ entry.nameForId }}-G{{ entry.groupNameForId }}-L{{ entry.level }}-cached-keys" class="sf-toggle-content">
+								<pre>{{ dump(entry.statistics.cachedKeys) }}</pre>
+							</div>
+						{% endif %}
+					</td>
+				</tr>
+			</td>
+		</tbody>
+	</tr>
+</div>{% endfor %}</tbody></table>{% endfor %}{% endblock %}

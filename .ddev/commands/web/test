@@ -1,0 +1,7 @@
+#!/bin/bash
+
+## Description: Run PHPUnit tests
+## Usage: test [phpunit-options]
+## Example: "ddev test" or "ddev test --filter FeatureFlagClientTest"
+
+vendor/bin/phpunit "$@"
