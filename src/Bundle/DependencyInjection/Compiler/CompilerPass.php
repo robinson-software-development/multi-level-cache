@@ -32,7 +32,7 @@ class CompilerPass implements CompilerPassInterface
 
 	private function getRootDir(): string
 	{
-		return rtrim(dirname(__DIR__, 2), '/');
+		return rtrim(dirname(__DIR__, 3), '/');
 	}
 
 }
