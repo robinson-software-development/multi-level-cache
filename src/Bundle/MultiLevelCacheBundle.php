@@ -19,6 +19,30 @@ class MultiLevelCacheBundle extends Bundle
 		parent::build($container);
 
 		$container->addCompilerPass(new CompilerPass());
+
+		$this->processMultiLevelCacheServiceCollector($container);
+	}
+
+	private function processMultiLevelCacheServiceCollector(ContainerBuilder $container): void
+	{
+		$definition = new Definition(MultiLevelCacheDataCollector::class);
+		$definition->setPublic(true);
+		$definition->addTag('data_collector', [
+			'id' => MultiLevelCacheDataCollector::NAME,
+			'template' => MultiLevelCacheDataCollector::TEMPLATE,
+			'priority' => 334,
+		]);
+		$definition->setArgument('$appEnv', "%env(APP_ENV)%");
+		$definition->setArgument('$enhancedDataCollection', '%env(bool:defined:MLC_COLLECT_ENHANCED_DATA)%');
+		$definition->setAutowired(true);
+		$definition->setAutoconfigured(true);
+
+		$container->setDefinition(MultiLevelCacheDataCollector::NAME, $definition);
+
+		$container->setAlias(
+			MultiLevelCacheDataCollector::class,
+			MultiLevelCacheDataCollector::NAME
+		)->setPublic(true);
 	}
 
 }
