@@ -48,7 +48,7 @@ Install via Composer from GitHub:
 4. Configure Environment Variables as needed:
    - `REDIS_DSN` (if using Redis)
    - `MLC_DISABLE_READ` (optional, disables cache reads)
-   - `MLC_COLLECT_ENHANCED_DATA` (optional, enables enhanced data collection)
+   - `MLC_COLLECT_ENHANCED_DATA` (optional, enables enhanced data collection but has performance impact)
 
 ---
 

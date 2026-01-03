@@ -31,6 +31,14 @@
             "Tbessenreither\\MultiLevelCache\\Tests\\": "tests/"
         }
     },
+    "scripts": {
+        "post-install-cmd": [
+            "rm -f .phpunit.result.cache"
+        ],
+        "post-update-cmd": [
+            "rm -f .phpunit.result.cache"
+        ]
+    },
     "minimum-stability": "stable",
     "prefer-stable": true,
     "config": {

@@ -1,7 +1,8 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-## Description: Run PHPUnit tests
-## Usage: test [phpunit-options]
-## Example: "ddev test" or "ddev test --filter FeatureFlagClientTest"
+## Description: Runs PHPUnit tests with code coverage enabled and writes the coverage.xml report to coverage/coverage.xml.
+## usage: ddev symfony test_coverage
 
-vendor/bin/phpunit "$@"
+echo "run coverage tests"
+
+php vendor/bin/phpunit --coverage-clover public/coverage/coverage.xml
