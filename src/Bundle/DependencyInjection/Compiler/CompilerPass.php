@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Tbessenreither\MultiLevelCache\Bundle\DependencyInjection\Compiler;
 
-use RuntimeException;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Tbessenreither\MultiLevelCache\Factory\MultiLevelCacheFactory;
 
 
 class CompilerPass implements CompilerPassInterface
@@ -28,6 +28,9 @@ class CompilerPass implements CompilerPassInterface
 			'TbessenreitherMultiLevelCache',
 		]);
 
+		if ($container->hasDefinition(MultiLevelCacheFactory::class)) {
+			$container->getDefinition(MultiLevelCacheFactory::class)->setPublic(true);
+		}
 	}
 
 	private function getRootDir(): string
