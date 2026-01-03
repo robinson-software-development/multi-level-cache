@@ -7,6 +7,7 @@ namespace Tbessenreither\MultiLevelCache\Bundle\DependencyInjection\Compiler;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
+use Tbessenreither\MultiLevelCache\DataCollector\MultiLevelCacheDataCollector;
 use Tbessenreither\MultiLevelCache\Factory\MultiLevelCacheFactory;
 
 
@@ -29,12 +30,31 @@ class CompilerPass implements CompilerPassInterface
 			'TbessenreitherMultiLevelCache',
 		]);
 
+		$this->processMultiLevelCacheServiceCollector($container);
+
 		$this->processMultiLevelCacheFactory($container);
 	}
 
 	private function getRootDir(): string
 	{
 		return rtrim(dirname(__DIR__, 3), '/');
+	}
+
+	private function processMultiLevelCacheServiceCollector(ContainerBuilder $container): void
+	{
+		$definition = new Definition(MultiLevelCacheDataCollector::class);
+		$definition->setPublic(true);
+		$definition->addTag('data_collector', [
+			'id' => MultiLevelCacheDataCollector::NAME,
+			'template' => MultiLevelCacheDataCollector::TEMPLATE,
+			'priority' => 334,
+		]);
+		$definition->setArgument('$appEnv', "%env(APP_ENV)%");
+		$definition->setArgument('$enhancedDataCollection', '%env(bool:defined:MLC_COLLECT_ENHANCED_DATA)%');
+		$definition->setAutowired(true);
+		$definition->setAutoconfigured(true);
+
+		$container->setDefinition(MultiLevelCacheDataCollector::NAME, $definition);
 	}
 
 	private function processMultiLevelCacheFactory(ContainerBuilder $container): void
