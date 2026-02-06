@@ -9,8 +9,10 @@ use Tbessenreither\MultiLevelCache\CachedServiceGenerator\Attribute\MlcCachableS
 use Tbessenreither\MultiLevelCache\CachedServiceGenerator\Attribute\MlcCachedService;
 use Tbessenreither\MultiLevelCache\CachedServiceGenerator\Exception\MlcUpdateCachedServiceException;
 use ReflectionClass;
+use ReflectionIntersectionType;
 use ReflectionMethod;
 use ReflectionNamedType;
+use ReflectionUnionType;
 use RuntimeException;
 use Throwable;
 
@@ -179,11 +181,36 @@ class MlcMakeCachedServiceService
             $args = [];
             foreach ($method->getParameters() as $param) {
                 $paramStr = '';
+
                 if ($param->hasType()) {
+                    $types = [];
+                    $typeConcat = '&';
                     $type = $param->getType();
                     if ($type instanceof ReflectionNamedType) {
-                        $paramStr .= $this->fixInlinedClassNames($type->getName()) . ' ';
+                        $types = [$type];
+                    } elseif($type instanceof ReflectionUnionType) {
+                        $types = $type->getTypes();
+                        $typeConcat = '|';
+                    } elseif($type instanceof ReflectionIntersectionType) {
+                        $types = $type->getTypes();
+                        $typeConcat = '&';
+                    } else {
+                        throw new RuntimeException("Unsupported parameter type for parameter \${$param->getName()} in method {$method->getName()}.");
                     }
+
+                    $unionTypeStrings = [];
+                    foreach($types as $unionType) {
+                        if(!$unionType instanceof ReflectionNamedType) {
+                            throw new RuntimeException("Unsupported parameter type for parameter \${$param->getName()} in method {$method->getName()}. Only named types are supported in union/intersection types.");
+                        }
+                        $unionTypeStr = '';
+                        if($unionType->allowsNull()) {
+                            $unionTypeStr .= '?';
+                        }
+                        $unionTypeStr .= $this->fixInlinedClassNames($unionType->getName());
+                        $unionTypeStrings[] = $unionTypeStr;
+                    }
+                    $paramStr .= implode($typeConcat, $unionTypeStrings) . ' ';
                 }
                 $paramStr .= '$' . $param->getName();
                 if ($param->isDefaultValueAvailable()) {
@@ -196,7 +223,10 @@ class MlcMakeCachedServiceService
             $returnType = $method->getReturnType();
             $returnTypeStr = '';
             if ($returnType && $returnType instanceof ReflectionNamedType) {
-                $returnTypeStr = $this->fixInlinedClassNames($returnType->getName());
+                if($returnType->allowsNull()) {
+                    $returnTypeStr .= '?';
+                }
+                $returnTypeStr .= $this->fixInlinedClassNames($returnType->getName());
             } else {
                 throw new RuntimeException("Method {$method->getName()} is missing a return type declaration. This is a requirement for cached services.");
             }
